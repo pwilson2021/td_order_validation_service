@@ -8,17 +8,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import turntabl.io.order_validation_service.publish.Publisher;
 import turntabl.io.order_validation_service.publish.ReportPublisher;
-import turntabl.io.order_validation_service.service.HttpConnection;
 import turntabl.io.order_validation_service.service.OrderRunnable;
 
 @SpringBootApplication
 public class OrderValidationServiceApplication {
 	private RedisTemplate<?,?> template;
 	private RestTemplateBuilder restTemplateBuilder;
-    @Bean
-	HttpConnection connection(){
-    	return new HttpConnection(restTemplateBuilder);
-	}
+//    @Bean
+//	HttpConnection connection(){
+//    	return new HttpConnection(restTemplateBuilder);
+//	}
 	public static void main(String[] args) {
 		SpringApplication.run(OrderValidationServiceApplication.class, args);
 	}

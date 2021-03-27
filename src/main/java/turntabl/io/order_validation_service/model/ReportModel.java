@@ -1,17 +1,18 @@
 package turntabl.io.order_validation_service.model;
 
 import lombok.Data;
+import turntabl.io.order_validation_service.model.order.Order;
 
 @Data
 public class ReportModel {
-    public OrderModel validatedOrder;
+    public Order validatedOrder;
     private String reportTitle;
 
-    public OrderModel getValidatedOrder() {
+    public Order getValidatedOrder() {
         return validatedOrder;
     }
 
-    public void setValidatedOrder(OrderModel validatedOrder) {
+    public void setValidatedOrder(Order validatedOrder) {
         this.validatedOrder = validatedOrder;
     }
 
