@@ -23,11 +23,14 @@ import turntabl.io.order_validation_service.web.FetchMarketData;
 
 @Endpoint
 public class OrderReceiverEndpoint {
-    PortfolioService portfolioService;
+
+    @Autowired
     ProductService productService;
+    @Autowired
     UserService userService;
+    @Autowired
     OrderService orderService;
-    private FetchMarketData fetchMarketData;
+    private final FetchMarketData fetchMarketData = new FetchMarketData();
     @Autowired
     private Publisher tradePublisher;
     @Autowired
@@ -41,13 +44,18 @@ public class OrderReceiverEndpoint {
        response.setIsOrderValidated(false);
        response.setStatus("REJECTED");
        response.setOrderId(request.getOrderId());
-       response.setMessage("Order is not valid");
+       response.setMessage("Order is not valid from beginning");
+       System.out.println(request.getOrderId());
+       System.out.println(request.getClientId());
+       Order order = getOrder(request.getOrderId());
+//       tradePublisher.publish(mapper.writeValueAsBytes(request.getOrderId()));
+
 
        Boolean userExist = verifyUser(request.getClientId());
        if(userExist){
-           Order order = getOrder(request.getOrderId());
+           ExchangeMarketDataModel marketData = getMarketData(order.getProduct().getId());
            if(order.getOrder_type().equals("BUY")){
-               ExchangeMarketDataModel marketData = getMarketData(order.getProduct().getId());
+
                if(marketData != null){
                    Boolean hasFunds = validateClientFunds(getClientFunds(request.getClientId()),getOrder(request.getOrderId()).getPrice());
                    if(hasFunds){
@@ -59,7 +67,7 @@ public class OrderReceiverEndpoint {
                            response.setOrderId(request.getOrderId());
                            response.setIsOrderValidated(true);
 
-                           tradePublisher.publish(mapper.writeValueAsBytes(request.getOrderId()));
+                           tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                            reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
                        }else {
                            response.setIsOrderValidated(false);
@@ -92,7 +100,7 @@ public class OrderReceiverEndpoint {
                       response.setIsOrderValidated(true);
                       response.setMessage("Order is validated");
                       //                      send to reporting service
-                      tradePublisher.publish(mapper.writeValueAsBytes(request.getOrderId()));
+                      tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                       reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
                   }else{
                       response.setStatus("Rejected");
@@ -116,6 +124,7 @@ public class OrderReceiverEndpoint {
                reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
            }
        }
+//       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
        return response;
    }
 
@@ -136,7 +145,11 @@ public class OrderReceiverEndpoint {
        Product product = productService.findProductById(id);
        if(product !=null){
            String ticker = product.getTicker();
-           return fetchMarketData.fetchMarketDataByTicker(ticker,1).block();
+           System.out.println(ticker);
+           ExchangeMarketDataModel data =fetchMarketData.fetchMarketDataByTicker(ticker,1).block();
+           assert data != null;
+           System.out.println(data.toString());
+           return data;
        }
        return null;
    }

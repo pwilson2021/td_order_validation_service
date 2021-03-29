@@ -20,7 +20,7 @@ public class FetchMarketData {
         return client.get().uri(exchange+"/md/"+ticker).retrieve().bodyToMono(ExchangeMarketDataModel.class);
     }
 
-    public void test() {
-        ExchangeMarketDataModel exchangeMarketDataModel = fetchMarketDataByTicker("AAPL", 1).block();
-    }
+//    public void test() {
+//        ExchangeMarketDataModel exchangeMarketDataModel = fetchMarketDataByTicker("AAPL", 1).block();
+//    }
 }

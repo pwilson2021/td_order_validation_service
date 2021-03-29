@@ -13,7 +13,7 @@ public class Publisher {
         this.topic = topic;
     }
 
-    public void publish(byte[] msg ) throws JsonProcessingException {
+    public void publish(String msg ) throws JsonProcessingException {
 //        LOGGER.info("Sending message to Receiver"+msg);
         template.convertAndSend(topic.getTopic(), msg);
     }
