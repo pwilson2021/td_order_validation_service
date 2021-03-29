@@ -2,10 +2,12 @@ package turntabl.io.order_validation_service.model.order;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import turntabl.io.order_validation_service.model.user.User;
 
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -50,6 +52,10 @@ public class OrderService {
         }
 
 
+    }
+    public Order findOrderById (int id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        return orderOptional.orElse(null);
     }
 
 }

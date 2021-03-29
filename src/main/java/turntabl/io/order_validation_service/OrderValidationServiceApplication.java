@@ -22,15 +22,15 @@ public class OrderValidationServiceApplication {
 		SpringApplication.run(OrderValidationServiceApplication.class, args);
 	}
 
-	@Bean
-	Publisher publishTrade(){return new Publisher(template,new ChannelTopic("validated-order"));}
-
-	@Bean
-	ReportPublisher reportPublisher(){return new ReportPublisher(template,new ChannelTopic("reporting-service"));}
-
-	OrderRunnable runnable =  new OrderRunnable();
-    Thread orderTrade = new Thread(runnable);
-	{
-		orderTrade.start();
-	}
+//	@Bean
+//	Publisher publishTrade(){return new Publisher(template,new ChannelTopic("validated-order"));}
+//
+//	@Bean
+//	ReportPublisher reportPublisher(){return new ReportPublisher(template,new ChannelTopic("reporting-service"));}
+//
+//	OrderRunnable runnable =  new OrderRunnable();
+//    Thread orderTrade = new Thread(runnable);
+//	{
+//		orderTrade.start();
+//	}
 }

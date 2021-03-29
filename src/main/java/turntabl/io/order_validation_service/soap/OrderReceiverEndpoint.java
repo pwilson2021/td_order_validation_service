@@ -10,7 +10,8 @@ import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
 import org.springframework.ws.server.endpoint.annotation.RequestPayload;
 import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
 import turntabl.io.order_validation_service.model.ExchangeMarketDataModel;
-import turntabl.io.order_validation_service.model.portfolio.Portfolio;
+import turntabl.io.order_validation_service.model.order.Order;
+import turntabl.io.order_validation_service.model.order.OrderService;
 import turntabl.io.order_validation_service.model.portfolio.PortfolioService;
 import turntabl.io.order_validation_service.model.product.Product;
 import turntabl.io.order_validation_service.model.product.ProductService;
@@ -22,10 +23,14 @@ import turntabl.io.order_validation_service.web.FetchMarketData;
 
 @Endpoint
 public class OrderReceiverEndpoint {
-    PortfolioService portfolioService;
+
+    @Autowired
     ProductService productService;
+    @Autowired
     UserService userService;
-    private FetchMarketData fetchMarketData;
+    @Autowired
+    OrderService orderService;
+    private final FetchMarketData fetchMarketData = new FetchMarketData();
     @Autowired
     private Publisher tradePublisher;
     @Autowired
@@ -33,112 +38,149 @@ public class OrderReceiverEndpoint {
     ObjectMapper mapper = new ObjectMapper();
 
    @PayloadRoot(namespace="http://turntabl.io/get-client-order", localPart = "getOrderRequest")
-    @ResponsePayload
-    public GetOrderResponse getOrder(@RequestPayload GetOrderRequest request) throws JsonProcessingException {
+   @ResponsePayload
+   public GetOrderResponse getOrder(@RequestPayload GetOrderRequest request) throws JsonProcessingException {
        GetOrderResponse response = new GetOrderResponse();
-
        response.setIsOrderValidated(false);
        response.setStatus("REJECTED");
-       Boolean userExist = verifyUser(request.getOrder().getUserId());
+       response.setOrderId(request.getOrderId());
+       response.setMessage("Order is not valid from beginning");
+       System.out.println(request.getOrderId());
+       System.out.println(request.getClientId());
+       Order order = getOrder(request.getOrderId());
+//       tradePublisher.publish(mapper.writeValueAsBytes(request.getOrderId()));
+
+
+       Boolean userExist = verifyUser(request.getClientId());
        if(userExist){
-           if (request.getOrder().getOrderType().equals("BUY")){
-            ExchangeMarketDataModel marketDataExist = getMarketData(request.getOrder().getProductId());
-            if(marketDataExist !=null){
-                Boolean hasFunds = validateClientFunds(getClientFunds(request.getOrder().getUserId()),request.getOrder().getPrice());
-                if(hasFunds){
-                    boolean priceAccepted = verifyForBuyOrderType(marketDataExist,request.getOrder().getPrice());
-                    boolean buyLimitAccepted = verifySellLimit(marketDataExist,request.getOrder().getQuantity());
-                    if(priceAccepted && buyLimitAccepted){
-                        response.setIsOrderValidated(true);
-                        response.setStatus("VALID");
-//                      publish validated order to trade engine and reporting service
-                        tradePublisher.publish(mapper.writeValueAsBytes(request.getOrder()));
-                        reportPublisher.publish(mapper.writeValueAsString("order validated"+request.getOrder()));
-                    }
-                }else{
-                    response.setStatus("REJECTED");
-                    reportPublisher.publish(mapper.writeValueAsString("order Rejected"+request.getOrder()));
-//               need to add order message
-                }
-            }
-           }else if(request.getOrder().getOrderType().equals("SELL")){
-               Boolean productExist = verifyProduct(request.getOrder().getProductId());
-               Boolean portfolioExist = verifyPortfolio(request.getOrder().getPortfolioId());
-               if(productExist && portfolioExist){
-                   boolean priceAccepted = verifyForSellOrderType(getMarketData(request.getOrder().getProductId()),request.getOrder().getPrice());
-                   boolean sellLimitAccepted = verifyBuyLimit(getMarketData(request.getOrder().getProductId()),request.getOrder().getQuantity());
-                   if(priceAccepted && sellLimitAccepted){
-                       response.setIsOrderValidated(true);
-                       response.setStatus("VALID");
-//                       send to trade engine
-                       tradePublisher.publish(mapper.writeValueAsBytes(request.getOrder()));
-                       reportPublisher.publish(mapper.writeValueAsString("order validated"+request.getOrder()));
+           ExchangeMarketDataModel marketData = getMarketData(order.getProduct().getId());
+           if(order.getOrder_type().equals("BUY")){
+
+               if(marketData != null){
+                   Boolean hasFunds = validateClientFunds(getClientFunds(request.getClientId()),getOrder(request.getOrderId()).getPrice());
+                   if(hasFunds){
+                       Boolean priceAccepted = verifyForBuyOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
+                       Boolean buyLimitedAccepted = verifySellLimit(getMarketData(order.getProduct().getId()), order.getQuantity());
+                       if(priceAccepted && buyLimitedAccepted){
+                           response.setStatus("ACCEPTED");
+                           response.setMessage("Order is validated and accepted");
+                           response.setOrderId(request.getOrderId());
+                           response.setIsOrderValidated(true);
+
+                           tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
+                           reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
+                       }else {
+                           response.setIsOrderValidated(false);
+                           response.setMessage("Order Price and Quantity not accepted");
+                           response.setOrderId(request.getOrderId());
+                           response.setStatus("REJECTED");
+                           reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                       }
+                   }else{
+                       response.setIsOrderValidated(false);
+                       response.setMessage("Client has insufficient funds");
+                       response.setOrderId(request.getOrderId());
+                       response.setStatus("REJECTED");
+                       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                    }
                }else {
                    response.setIsOrderValidated(false);
+                   response.setMessage("Product not on the market");
+                   response.setOrderId(request.getOrderId());
                    response.setStatus("REJECTED");
-                   reportPublisher.publish(mapper.writeValueAsString("order Rejected"+request.getOrder()));
+                   reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                }
+           }else if(order.getOrder_type().equals("SELL")){
+              if(order.getProduct() != null && order.getPortfolio() !=null){
+                  Boolean priceAccepted = verifyForBuyOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
+                  Boolean sellLimitedAccepted = verifyBuyLimit(getMarketData(order.getProduct().getId()), order.getQuantity());
+
+                  if(priceAccepted && sellLimitedAccepted){
+                      response.setStatus("Accepted");
+                      response.setIsOrderValidated(true);
+                      response.setMessage("Order is validated");
+                      //                      send to reporting service
+                      tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
+                      reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
+                  }else{
+                      response.setStatus("Rejected");
+                      response.setIsOrderValidated(false);
+                      response.setMessage("Order price or quantity is not valid");
+                      reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                  }
+                  response.setOrderId(request.getOrderId());
+              }else {
+                  response.setIsOrderValidated(false);
+                  response.setMessage("Product or portfolio does not exist");
+                  response.setOrderId(request.getOrderId());
+                  response.setStatus("REJECTED");
+                  reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+              }
            }else{
                response.setIsOrderValidated(false);
+               response.setMessage("Order type not valid");
+               response.setOrderId(request.getOrderId());
                response.setStatus("REJECTED");
-               reportPublisher.publish(mapper.writeValueAsString("order Rejected"+request.getOrder()));
+               reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
            }
-       }else{
-           response.setStatus("USER DOES NOT EXIST");
-           response.setIsOrderValidated(false);
-           reportPublisher.publish(mapper.writeValueAsString("order Rejected"+request.getOrder()));
        }
-       reportPublisher.publish(mapper.writeValueAsString("order Rejected"+request.getOrder()));
+//       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
        return response;
    }
-   public Boolean validateClientFunds(Double funds, Double price){
-       return funds >= price;
-   }
-   public Boolean verifyPortfolio(int id){
-       Portfolio portfolio=portfolioService.findPortfolioById(id);
-       return portfolio != null;
-   }
-   public Boolean verifyProduct(int id){
-       Product product= productService.findProductById(id);
-       return product != null;
-   }
+
    public Boolean verifyUser(int id){
        User user = userService.findUserById(id);
        return user != null;
    }
+
    public Double getClientFunds(int id){
        User user = userService.findUserById(id);
-       if (user != null){
+       if(user  != null){
            return user.getFunds();
        }
        return null;
    }
+
    public ExchangeMarketDataModel getMarketData(int id){
        Product product = productService.findProductById(id);
-       if (product != null){
+       if(product !=null){
            String ticker = product.getTicker();
-
-           return fetchMarketData.fetchMarketDataByTicker(ticker,1).block();
+           System.out.println(ticker);
+           ExchangeMarketDataModel data =fetchMarketData.fetchMarketDataByTicker(ticker,1).block();
+           assert data != null;
+           System.out.println(data.toString());
+           return data;
        }
        return null;
    }
+
    public Boolean verifyForBuyOrderType(ExchangeMarketDataModel data, double price){
        double upperLimit = 1.0 + data.getAsk_price();
        double lowerLimit = 1.0 - data.getAsk_price();
        return price >= lowerLimit && price <= upperLimit;
+
    }
+
    public Boolean verifyForSellOrderType(ExchangeMarketDataModel data,double price){
-       double lowerLimit = 1.0 - data.getBid_price();
        double upperLimit = 1.0 + data.getBid_price();
-       return price >= lowerLimit && price <=upperLimit;
+       double lowerLimit = 1.0 - data.getBid_price();
+
+       double reasonableIncrement = (1.0 + data.getBid_price())*1.10;
+       return (price >= lowerLimit && price <= upperLimit) || price <= reasonableIncrement;
    }
    public Boolean verifySellLimit(ExchangeMarketDataModel data, int quantity){
 //       this is to check sell limit when order type is BUY
        return quantity <= data.getSell_limit();
    }
+
    public Boolean verifyBuyLimit(ExchangeMarketDataModel data, int quantity){
-//       this is to check for buy limit when order type is sell
+//       this is check for buy limit when the order type is sell
        return quantity <= data.getBuy_limit();
    }
+   public Order getOrder(int id){
+       return orderService.findOrderById(id);
+   }
+    public Boolean validateClientFunds(Double funds, Double price){
+        return funds >= price;
+    }
 }
