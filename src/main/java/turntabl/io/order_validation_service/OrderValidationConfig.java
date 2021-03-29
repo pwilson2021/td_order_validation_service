@@ -35,7 +35,7 @@ public class OrderValidationConfig {
     }
 
     @Bean
-    public ChannelTopic tradeTopic() {return new ChannelTopic("ovs-trade-service");}
+    public ChannelTopic tradeTopic() {return new ChannelTopic("ovs-trade-engine");}
     @Bean
     public ChannelTopic reportTopic() {return new ChannelTopic("reporting-service");}
 
