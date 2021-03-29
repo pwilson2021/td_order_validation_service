@@ -19,7 +19,7 @@ public class OrderValidationConfig {
     @Bean
     public JedisConnectionFactory connectionFactory(){
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setHostName("localhost");
+        configuration.setHostName("192.81.210.68");
         configuration.setPort(6379);
 
         return new JedisConnectionFactory(configuration);
