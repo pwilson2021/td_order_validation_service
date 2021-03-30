@@ -97,7 +97,7 @@ public class OrderReceiverEndpoint {
            }else if(order.getOrder_type().equals("sell")){
                System.out.println("order type is Sell");
               if(order.getProduct() != null && order.getPortfolio() !=null){
-                  Boolean priceAccepted = verifyForBuyOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
+                  Boolean priceAccepted = verifyForSellOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
                   Boolean sellLimitedAccepted = verifyBuyLimit(getMarketData(order.getProduct().getId()), order.getQuantity());
 
                   if(priceAccepted && sellLimitedAccepted){
@@ -164,15 +164,15 @@ public class OrderReceiverEndpoint {
    }
 
    public Boolean verifyForBuyOrderType(ExchangeMarketDataModel data, double price){
-       double upperLimit = 1.0 + data.getAsk_price();
-       double lowerLimit = 1.0 - data.getAsk_price();
+       double upperLimit = 1.0 + data.getBid_price();
+       double lowerLimit = 1.0 - data.getBid_price();
        return price >= lowerLimit && price <= upperLimit;
 
    }
 
    public Boolean verifyForSellOrderType(ExchangeMarketDataModel data,double price){
-       double upperLimit = 1.0 + data.getBid_price();
-       double lowerLimit = 1.0 - data.getBid_price();
+       double upperLimit = 1.0 + data.getAsk_price();
+       double lowerLimit = 1.0 - data.getAsk_price();
 
        double reasonableIncrement = (1.0 + data.getBid_price())*1.10;
        return (price >= lowerLimit && price <= upperLimit) || price <= reasonableIncrement;
