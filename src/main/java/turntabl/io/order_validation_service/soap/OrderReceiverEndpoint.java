@@ -67,6 +67,7 @@ public class OrderReceiverEndpoint {
                            response.setOrderId(request.getOrderId());
                            response.setIsOrderValidated(true);
 
+                           System.out.println(request.getOrderId());
                            tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                            reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
                        }else {
@@ -99,6 +100,8 @@ public class OrderReceiverEndpoint {
                       response.setStatus("Accepted");
                       response.setIsOrderValidated(true);
                       response.setMessage("Order is validated");
+
+                      System.out.println(request.getOrderId());
                       //                      send to reporting service
                       tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                       reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
