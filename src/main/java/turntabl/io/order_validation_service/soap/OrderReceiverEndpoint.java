@@ -54,7 +54,7 @@ public class OrderReceiverEndpoint {
        Boolean userExist = verifyUser(request.getClientId());
        if(userExist){
            ExchangeMarketDataModel marketData = getMarketData(order.getProduct().getId());
-           if(order.getOrder_type().equals("BUY")){
+           if(order.getOrder_type().equals("buy")){
                System.out.println("order type is BUY");
                if(marketData != null){
                    Boolean hasFunds = validateClientFunds(getClientFunds(request.getClientId()),getOrder(request.getOrderId()).getPrice());
@@ -94,7 +94,7 @@ public class OrderReceiverEndpoint {
                    System.out.println("Product not found on market data");
                    reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                }
-           }else if(order.getOrder_type().equals("SELL")){
+           }else if(order.getOrder_type().equals("sell")){
                System.out.println("order type is Sell");
               if(order.getProduct() != null && order.getPortfolio() !=null){
                   Boolean priceAccepted = verifyForBuyOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
