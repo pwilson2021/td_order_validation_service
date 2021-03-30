@@ -55,7 +55,7 @@ public class OrderReceiverEndpoint {
        if(userExist){
            ExchangeMarketDataModel marketData = getMarketData(order.getProduct().getId());
            if(order.getOrder_type().equals("BUY")){
-
+               System.out.println("order type is BUY");
                if(marketData != null){
                    Boolean hasFunds = validateClientFunds(getClientFunds(request.getClientId()),getOrder(request.getOrderId()).getPrice());
                    if(hasFunds){
@@ -75,6 +75,7 @@ public class OrderReceiverEndpoint {
                            response.setMessage("Order Price and Quantity not accepted");
                            response.setOrderId(request.getOrderId());
                            response.setStatus("REJECTED");
+                           System.out.println("Order Price and Quantity not accepted");
                            reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                        }
                    }else{
@@ -82,6 +83,7 @@ public class OrderReceiverEndpoint {
                        response.setMessage("Client has insufficient funds");
                        response.setOrderId(request.getOrderId());
                        response.setStatus("REJECTED");
+                       System.out.println("Client has insufficient funds");
                        reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                    }
                }else {
@@ -89,9 +91,11 @@ public class OrderReceiverEndpoint {
                    response.setMessage("Product not on the market");
                    response.setOrderId(request.getOrderId());
                    response.setStatus("REJECTED");
+                   System.out.println("Product not found on market data");
                    reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                }
            }else if(order.getOrder_type().equals("SELL")){
+               System.out.println("order type is Sell");
               if(order.getProduct() != null && order.getPortfolio() !=null){
                   Boolean priceAccepted = verifyForBuyOrderType(getMarketData(order.getProduct().getId()),order.getPrice());
                   Boolean sellLimitedAccepted = verifyBuyLimit(getMarketData(order.getProduct().getId()), order.getQuantity());
@@ -109,6 +113,7 @@ public class OrderReceiverEndpoint {
                       response.setStatus("Rejected");
                       response.setIsOrderValidated(false);
                       response.setMessage("Order price or quantity is not valid");
+                      System.out.println("Order price or quantity is not valid");
                       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
                   }
                   response.setOrderId(request.getOrderId());
@@ -124,6 +129,7 @@ public class OrderReceiverEndpoint {
                response.setMessage("Order type not valid");
                response.setOrderId(request.getOrderId());
                response.setStatus("REJECTED");
+               System.out.println("Order type not valid");
                reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
            }
        }
