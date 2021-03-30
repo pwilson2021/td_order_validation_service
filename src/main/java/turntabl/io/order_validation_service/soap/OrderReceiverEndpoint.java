@@ -70,6 +70,7 @@ public class OrderReceiverEndpoint {
                            System.out.println(request.getOrderId());
                            tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                            reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
+                           orderService.updateOrder(order.getId(), null, 0, "awaiting");
                        }else {
                            response.setIsOrderValidated(false);
                            response.setMessage("Order Price and Quantity not accepted");
@@ -77,6 +78,7 @@ public class OrderReceiverEndpoint {
                            response.setStatus("REJECTED");
                            System.out.println("Order Price and Quantity not accepted");
                            reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                           orderService.updateOrder(order.getId(), null, 0, "rejected");
                        }
                    }else{
                        response.setIsOrderValidated(false);
@@ -85,6 +87,7 @@ public class OrderReceiverEndpoint {
                        response.setStatus("REJECTED");
                        System.out.println("Client has insufficient funds");
                        reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                       orderService.updateOrder(order.getId(), null, 0, "rejected");
                    }
                }else {
                    response.setIsOrderValidated(false);
@@ -93,6 +96,7 @@ public class OrderReceiverEndpoint {
                    response.setStatus("REJECTED");
                    System.out.println("Product not found on market data");
                    reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                   orderService.updateOrder(order.getId(), null, 0, "rejected");
                }
            }else if(order.getOrder_type().equals("sell")){
                System.out.println("order type is Sell");
@@ -109,12 +113,14 @@ public class OrderReceiverEndpoint {
                       //                      send to reporting service
                       tradePublisher.publish(mapper.writeValueAsString(request.getOrderId()));
                       reportPublisher.publish(mapper.writeValueAsString("Order is Accepted:  "+request.getOrderId()));
+                      orderService.updateOrder(order.getId(), null, 0, "awaiting");
                   }else{
                       response.setStatus("Rejected");
                       response.setIsOrderValidated(false);
                       response.setMessage("Order price or quantity is not valid");
                       System.out.println("Order price or quantity is not valid");
                       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                      orderService.updateOrder(order.getId(), null, 0, "rejected");
                   }
                   response.setOrderId(request.getOrderId());
               }else {
@@ -123,6 +129,7 @@ public class OrderReceiverEndpoint {
                   response.setOrderId(request.getOrderId());
                   response.setStatus("REJECTED");
                   reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+                  orderService.updateOrder(order.getId(), null, 0, "rejected");
               }
            }else{
                response.setIsOrderValidated(false);
@@ -131,6 +138,7 @@ public class OrderReceiverEndpoint {
                response.setStatus("REJECTED");
                System.out.println("Order type not valid");
                reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
+               orderService.updateOrder(order.getId(), null, 0, "rejected");
            }
        }
 //       reportPublisher.publish(mapper.writeValueAsString("Order is rejected:  "+request.getOrderId()+ " : "+response.getMessage()));
