@@ -10,14 +10,16 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import turntabl.io.order_validation_service.listener.TradeListener;
+import turntabl.io.order_validation_service.model.OrderListenerModel;
 import turntabl.io.order_validation_service.publish.Publisher;
+import turntabl.io.order_validation_service.publish.ReportPublisher;
 
 @Configuration
 public class OrderValidationConfig {
     @Bean
     public JedisConnectionFactory connectionFactory(){
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setHostName("localhost");
+        configuration.setHostName("192.81.210.68");
         configuration.setPort(6379);
 
         return new JedisConnectionFactory(configuration);
@@ -33,26 +35,34 @@ public class OrderValidationConfig {
     }
 
     @Bean
-    public ChannelTopic topic() {return new ChannelTopic("pubsub:message-channel");}
+    public ChannelTopic tradeTopic() {return new ChannelTopic("ovs-trade-engine");}
+    @Bean
+    public ChannelTopic reportTopic() {return new ChannelTopic("reporting-service");}
 
     @Bean
-    Publisher redisPublisher(){
-        return new Publisher(template(),topic());
+    Publisher tradePublisher(){
+        return new Publisher(template(),tradeTopic());
     }
 
     @Bean
-    public MessageListenerAdapter messageListenerAdapter(){
-//        pass the receiver class to the message listener adapter
-        return new MessageListenerAdapter(new TradeListener());
-    }
+    ReportPublisher reportPublisher(){return new ReportPublisher(template(),reportTopic());}
 
-    @Bean
-    public RedisMessageListenerContainer redisContainer(){
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory());
-        container.addMessageListener(messageListenerAdapter(), topic());
+//    @Bean
+//    public MessageListenerAdapter messageListenerAdapter(){
+////        pass the receiver class to the message listener adapter
+//        return new MessageListenerAdapter(new TradeListener());
+//    }
 
-        return container;
-    }
+//    @Bean
+//    public RedisMessageListenerContainer redisContainer(){
+//        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+//        container.setConnectionFactory(connectionFactory());
+//        container.addMessageListener(messageListenerAdapter(), tradeTopic());
+//
+//        return container;
+//    }
+//
+//    @Bean
+//    OrderListenerModel orderListener(){return new OrderListenerModel();}
 
 }
