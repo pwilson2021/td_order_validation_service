@@ -48,6 +48,7 @@ public class OrderService {
         }
 
         if (order_status != null &&  !Objects.equals(order.getOrder_status() , order_status)) {
+            System.out.println("this is the new status  "+order_status );
             order.setOrder_status(order_status);
         }
 
